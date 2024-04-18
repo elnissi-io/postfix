@@ -39,11 +39,16 @@ jobs:
           username: ${{ secrets.QUAY_USER_POSTFIX }}
           password: ${{ secrets.QUAY_TOKEN_POSTFIX }}
 
-      - name: Get Latest Postfix Version
+      - name: Get Latest Postfix Version for Installation and Docker Tagging
         run: |
           sudo apt update
-          POSTFIX_VERSION=$(apt list postfix | grep postfix | cut -d' ' -f2)
-          echo "POSTFIX_VERSION=$POSTFIX_VERSION" >> $GITHUB_ENV
+          # Fetch the candidate version of Postfix
+          APT_POSTFIX_VERSION=$(apt-cache policy postfix | grep Candidate | awk '{print $2}')
+          # Format the version for Docker tagging by cutting off after the third part of the version number
+          DOCKER_POSTFIX_VERSION=$(echo "$APT_POSTFIX_VERSION" | grep -oP '^\d+\.\d+\.\d+')
+          echo "APT_POSTFIX_VERSION=$APT_POSTFIX_VERSION" >> $GITHUB_ENV
+          echo "DOCKER_POSTFIX_VERSION=$DOCKER_POSTFIX_VERSION" >> $GITHUB_ENV
+        
 
       - name: Build (and optionally push) image
         uses: docker/build-push-action@v5
