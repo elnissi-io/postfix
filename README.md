@@ -22,52 +22,47 @@ docker run quay.io/elnissi-io/postfix:0.0.4
 or use the [sample `docker-compose.yml`](docker-compose.yml) provided with
 this repository.
 
-    ```yaml
-    ---
-    services:
-      postfix:
-        build:
-          # VERSION must be specified on the command line:
-          # e.g., --build-arg VERSION=0.0.4
-          context: .
-          dockerfile: Dockerfile
-        image: cisagov/postfix
-        init: true
-        restart: always
-        environment:
-          - PRIMARY_DOMAIN=example.com
-          - RELAY_IP=172.16.202.1/32
-        networks:
-          front:
-            ipv4_address: 172.16.202.2
-        ports:
-          - target: "25"
-            published: "1025"
-            protocol: tcp
-            mode: host
-          - target: "587"
-            published: "1587"
-            protocol: tcp
-            mode: host
-          - target: "993"
-            published: "1993"
-            protocol: tcp
-            mode: host
-
+```yaml
+---
+services:
+  postfix:
+    image: quay.io/elnissi-io/postfix
+    init: true
+    restart: always
+    environment:
+      PRIMARY_DOMAIN: example.com
+      RELAY_IP: 172.16.202.1/32
+      AUTHS_FILE: /config/auths.yaml
     networks:
       front:
-        driver: bridge
-        ipam:
-          driver: default
-          config:
-            - subnet: 172.16.202.0/24
-    ```
+        ipv4_address: 172.16.202.2
+    ports:
+      - "1025:25/tcp"
+      - "1587:587/tcp"
+      - "1993:993/tcp"
+    secrets:
+      - ssl_cert
+      - ssl_key
+
+secrets:
+  ssl_cert:
+    file: ./config/certs/fullchain.pem
+  ssl_key:
+    file: ./config/certs/privkey.pem
+
+networks:
+  front:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.202.0/24
+```
 
 1. Start the container and detach:
 
-    ```console
-    docker compose up --detach
-    ```
+```console
+docker compose up --detach
+```
 
 ## Volumes ##
 
@@ -110,7 +105,7 @@ exposed ports at 1025, 1587, and 1993, respectively.
 |--------------|---------|
 | `fullchain.pem` | Public key for the Postfix server. |
 | `privkey.pem` | Private key for the Postfix server. |
-| `users.txt` | Mail account credentials to create at startup. |
+| `auths.yaml` | Mail account credentials to create at startup. |
 
 ## Contributing ##
 
@@ -119,4 +114,4 @@ Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
 
 ## License ##
 
-This project is in the worldwide [public domain](LICENSE.md).
+Licensed under the MIT License.

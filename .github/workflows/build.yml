@@ -2,10 +2,8 @@ name: Build postfix image
 
 on:
   push:
-    branches:
-      - main
     tags:
-      - 'v*'
+      - 'v*'  # Trigger the workflow on tag push that starts with 'v'
     paths-ignore:
       - README.md
       - docker-compose.yml
@@ -17,7 +15,7 @@ on:
       - README.md
       - docker-compose.yml
       - .github/**
-  workflow_dispatch:
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
   build-and-push:
@@ -39,30 +37,14 @@ jobs:
           username: ${{ secrets.QUAY_USER_POSTFIX }}
           password: ${{ secrets.QUAY_TOKEN_POSTFIX }}
 
-      - name: Get latest postfix Version and set tags
-        run: |
-          sudo apt update
-          # Fetch the candidate version of Postfix
-          APT_POSTFIX_VERSION=$(apt-cache policy postfix | grep Candidate | awk '{print $2}')
-          # Extract the version for Docker tagging (remove Ubuntu-specific suffixes and keep major.minor.patch)
-          DOCKER_POSTFIX_VERSION=$(echo "$APT_POSTFIX_VERSION" | grep -oE '^\d+\.\d+\.\d+')
-          echo "APT_POSTFIX_VERSION=$APT_POSTFIX_VERSION" >> $GITHUB_ENV
-          echo "DOCKER_POSTFIX_VERSION=$DOCKER_POSTFIX_VERSION" >> $GITHUB_ENV
-        
-          if [[ -z "$DOCKER_POSTFIX_VERSION" ]]; then
-            echo "DOCKER_TAG=quay.io/elnissi-io/postfix:latest" >> $GITHUB_ENV
-          else
-            echo "DOCKER_TAG=quay.io/elnissi-io/postfix:$DOCKER_POSTFIX_VERSION" >> $GITHUB_ENV
-          fi
-      
+      - name: Extract Version from Tag
+        run: echo "VERSION=$(echo ${GITHUB_REF#refs/tags/v})" >> $GITHUB_ENV
+
       - name: Build (and optionally push) image
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
           push: ${{ startsWith(github.ref, 'refs/tags/v') }}
-          tags: |
-            ${{ env.DOCKER_TAG }}
-          build-args: |
-            POSTFIX_VERSION=${{ env.APT_POSTFIX_VERSION }}
-      
+          tags: quay.io/elnissi-io/postfix:${{ env.VERSION }}  # Use the extracted version from tag
+

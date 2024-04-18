@@ -5,11 +5,6 @@ ARG DOCKER_POSTFIX_VERSION
 # Prevent apt from prompting during install
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Use the apt-compatible version for installing Postfix
-RUN apt-get update && \
-    apt-get install -y postfix=$APT_POSTFIX_VERSION && \
-    rm -rf /var/lib/apt/lists/*
-
 # Optionally use the Docker-specific version in labels or for other purposes
 LABEL postfix_version=$DOCKER_POSTFIX_VERSION
 
@@ -27,6 +22,7 @@ RUN apt-get update --quiet --quiet && \
     opendkim \
     opendkim-tools \
     opendmarc \
+    postfix \
     procmail \
     sasl2-bin && \
     apt-get --quiet --quiet clean && \
