@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Update and install all necessary packages including wget
 RUN apt-get update --quiet --quiet && \
     apt-get install --quiet --quiet --yes --no-install-recommends --no-install-suggests \
-    wget \
     ca-certificates \
     diceware \
     dovecot-imapd \
@@ -23,9 +22,10 @@ RUN apt-get update --quiet --quiet && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Download yq and set permissions
-RUN wget https://github.com/mikefarah/yq/releases/download/v4.43.1/yq_linux_amd64 -O /usr/bin/yq && \
+# Download yq using curl
+RUN curl -sL https://github.com/mikefarah/yq/releases/download/v4.43.1/yq_linux_amd64 -o /usr/bin/yq && \
     chmod +x /usr/bin/yq
+
 
 # Create a non-privileged user for mail handling
 RUN useradd -r -s /usr/sbin/nologin -c "Mail Archive" archive
