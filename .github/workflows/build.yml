@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.QUAY_USER_POSTFIX }}
           password: ${{ secrets.QUAY_TOKEN_POSTFIX }}
 
-      - name: Get Latest Postfix Version
+      - name: Get latest postfix Version and set tags
         run: |
           sudo apt update
           # Fetch the candidate version of Postfix
@@ -49,8 +49,6 @@ jobs:
           echo "APT_POSTFIX_VERSION=$APT_POSTFIX_VERSION" >> $GITHUB_ENV
           echo "DOCKER_POSTFIX_VERSION=$DOCKER_POSTFIX_VERSION" >> $GITHUB_ENV
         
-      - name: Prepare Tags
-        run: |
           if [[ -z "$DOCKER_POSTFIX_VERSION" ]]; then
             echo "DOCKER_TAG=quay.io/elnissi-io/postfix:latest" >> $GITHUB_ENV
           else
