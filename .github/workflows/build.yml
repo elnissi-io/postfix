@@ -50,14 +50,21 @@ jobs:
           echo "DOCKER_POSTFIX_VERSION=$DOCKER_POSTFIX_VERSION" >> $GITHUB_ENV
         
 
+          - name: Prepare Tags
+          run: |
+            if [[ -z "${{ env.REF_NAME }}" || -z "${{ env.DOCKER_POSTFIX_VERSION }}" ]]; then
+              echo "DOCKER_TAG=quay.io/elnissi-io/postfix:latest" >> $GITHUB_ENV
+            else
+              echo "DOCKER_TAG=quay.io/elnissi-io/postfix:${{ env.REF_NAME }}-${{ env.DOCKER_POSTFIX_VERSION }}" >> $GITHUB_ENV
+            fi
+      
       - name: Build (and optionally push) image
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
           push: ${{ startsWith(github.ref, 'refs/tags/v') }}
-          tags: |
-            quay.io/elnissi-io/postfix:latest
-            quay.io/elnissi-io/postfix:${{ env.REF_NAME }}-${{ env.POSTFIX_VERSION }}
+          tags: ${{ env.DOCKER_TAG }}
           build-args: |
-            POSTFIX_VERSION=${{ env.POSTFIX_VERSION }}
+            POSTFIX_VERSION=${{ env.APT_POSTFIX_VERSION }}
+      
