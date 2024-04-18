@@ -1,18 +1,18 @@
 FROM debian:bullseye-slim
-    
+
+ARG APT_POSTFIX_VERSION
+ARG DOCKER_POSTFIX_VERSION
 # Prevent apt from prompting during install
 ENV DEBIAN_FRONTEND=noninteractive
 
-# If POSTFIX_VERSION is not specified, install the latest version available
-ARG POSTFIX_VERSION
-
+# Use the apt-compatible version for installing Postfix
 RUN apt-get update && \
-    if [ -z "$POSTFIX_VERSION" ]; then \
-        apt-get install -y postfix; \
-    else \
-        apt-get install -y postfix=$POSTFIX_VERSION; \
-    fi && \
+    apt-get install -y postfix=$APT_POSTFIX_VERSION && \
     rm -rf /var/lib/apt/lists/*
+
+# Optionally use the Docker-specific version in labels or for other purposes
+LABEL postfix_version=$DOCKER_POSTFIX_VERSION
+
 
 # Install all dependencies in one layer to keep image size down
 RUN apt-get update --quiet --quiet && \
