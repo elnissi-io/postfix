@@ -1,0 +1,58 @@
+name: Build xoa-container
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+    paths-ignore:
+      - README.md
+      - docker-compose.yml
+      - .github/**
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - README.md
+      - docker-compose.yml
+      - .github/**
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_ELNISSI_USER_POSTFIX }}
+          password: ${{ secrets.QUAY_ELNISSI_TOKEN_POSTFIX }}
+
+      - name: Get Latest Postfix Version
+        run: |
+          sudo apt update
+          POSTFIX_VERSION=$(apt list postfix | grep postfix | cut -d' ' -f2)
+          echo "POSTFIX_VERSION=$POSTFIX_VERSION" >> $GITHUB_ENV
+
+      - name: Build (and optionally push) image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          tags: |
+            quay.io/elnissi-io/postfix:latest
+            quay.io/elnissi-io/postfix:${{ env.REF_NAME }}-${{ env.POSTFIX_VERSION }}
+          build-args: |
+            POSTFIX_VERSION=${{ env.POSTFIX_VERSION }}
