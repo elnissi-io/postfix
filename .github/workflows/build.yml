@@ -1,4 +1,4 @@
-name: Build xoa-container
+name: Build postfix image
 
 on:
   push:
