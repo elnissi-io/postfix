@@ -56,8 +56,6 @@ jobs:
           else
             echo "DOCKER_TAG=quay.io/elnissi-io/postfix:$DOCKER_POSTFIX_VERSION" >> $GITHUB_ENV
           fi
-        shell: /usr/bin/bash -e {0}
-        
       
       - name: Build (and optionally push) image
         uses: docker/build-push-action@v5
