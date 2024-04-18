@@ -36,8 +36,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: quay.io
-          username: ${{ secrets.QUAY_ELNISSI_USER_POSTFIX }}
-          password: ${{ secrets.QUAY_ELNISSI_TOKEN_POSTFIX }}
+          username: ${{ secrets.QUAY_USER_POSTFIX }}
+          password: ${{ secrets.QUAY_TOKEN_POSTFIX }}
 
       - name: Get Latest Postfix Version
         run: |
