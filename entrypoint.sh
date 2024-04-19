@@ -1,40 +1,59 @@
 #!/bin/bash
-
 set -e
-#set -x
 
-# Default values for environment variables
-: "${ARCHIVE_USER:=archive}"
-: "${PRIMARY_DOMAIN:=example.com}"
-: "${AUTHS_FILE:=/config/auths.yaml}"
-: "${SSL_CERT_PATH:=/config/certs/fullchain.pem}"
-: "${SSL_KEY_PATH:=/config/certs/privkey.pem}"
-: "${RELAY_IP:=}"
+# Define and export environment variables
+export ARCHIVE_USER="${ARCHIVE_USER:-archive}"
+export PRIMARY_DOMAIN="${PRIMARY_DOMAIN:-example.com}"
+export AUTHS_FILE="${AUTHS_FILE:-/config/auths.yaml}"
+export SSL_CERT_FILE="${SSL_CERT_FILE:-/config/certs/fullchain.pem}"
+export SSL_KEY_FILE="${SSL_KEY_FILE:-/config/certs/privkey.pem}"
+export RELAY_IP="${RELAY_IP:-}"
+export OPENDKIM_DEFAULT_SELECTOR="${OPENDKIM_DEFAULT_SELECTOR:-mail}"
+export OPENDKIM_KEYS_DIR="${OPENDKIM_KEYS_DIR:-/etc/opendkim/keys}"
 
-setup_dovecot_ssl() {
-  echo "Setting up SSL for Dovecot..."
-  if [[ ! -f "$SSL_CERT_PATH" || ! -f "$SSL_KEY_PATH" ]]; then
+# Echo out variables after setting defaults (for debugging purposes)
+echo "After setting defaults:"
+echo "ARCHIVE_USER=$ARCHIVE_USER"
+echo "PRIMARY_DOMAIN=$PRIMARY_DOMAIN"
+echo "AUTHS_FILE=$AUTHS_FILE"
+echo "SSL_CERT_FILE=$SSL_CERT_FILE"
+echo "SSL_KEY_FILE=$SSL_KEY_FILE"
+echo "RELAY_IP=$RELAY_IP"
+echo "OPENDKIM_DEFAULT_SELECTOR=$OPENDKIM_DEFAULT_SELECTOR"
+echo "OPENDKIM_KEYS_DIR=$OPENDKIM_KEYS_DIR"
+
+# Continue with the script logic...
+
+setup_ssl_certificates() {
+  echo "Checking SSL certificates..."
+  if [[ ! -f "$SSL_CERT_FILE" || ! -f "$SSL_KEY_FILE" ]]; then
     echo "SSL certificates not found. Generating self-signed certificates..."
-    openssl req -x509 -newkey rsa:4096 -keyout "$SSL_KEY_PATH" -out "$SSL_CERT_PATH" \
+    openssl req -x509 -newkey rsa:4096 -keyout "$SSL_KEY_FILE" -out "$SSL_CERT_FILE" \
       -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=${PRIMARY_DOMAIN}"
-    chown root:root "$SSL_CERT_PATH" "$SSL_KEY_PATH"
-    chmod 600 "$SSL_KEY_PATH"
+    chown root:root "$SSL_CERT_FILE" "$SSL_KEY_FILE"
+    chmod 600 "$SSL_KEY_FILE"
+    echo "SSL certificates generated."
   else
     echo "Using provided SSL certificates."
   fi
-
-  # Updating Dovecot's configuration with new paths
-  sed -i "s|ssl_cert = <.*|ssl_cert = <${SSL_CERT_PATH}|" /etc/dovecot/dovecot.conf
-  sed -i "s|ssl_key = <.*|ssl_key = <${SSL_KEY_PATH}|" /etc/dovecot/dovecot.conf
 }
+
+update_ssl_configurations() {
+  echo "Updating SSL configurations for services..."
+  sed -i "s|ssl_cert = <.*|ssl_cert = <${SSL_CERT_FILE}|" /etc/dovecot/dovecot.conf
+  sed -i "s|ssl_key = <.*|ssl_key = <${SSL_KEY_FILE}|" /etc/dovecot/dovecot.conf
+  
+  sed -i "s|smtpd_tls_cert_file=.*|smtpd_tls_cert_file=${SSL_CERT_FILE}|" /etc/postfix/main.cf
+  sed -i "s|smtpd_tls_key_file=.*|smtpd_tls_key_file=${SSL_KEY_FILE}|" /etc/postfix/main.cf
+}
+
 
 generate_configs() {
   echo "Generating configurations for ${PRIMARY_DOMAIN}..."
   
   # Postfix configurations
-  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < templates/main.cf.tmpl > /etc/postfix/main.cf
-  cp /etc/postfix/master.cf.orig /etc/postfix/master.cf
-  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < templates/master.cf.tmpl >> /etc/postfix/master.cf
+  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP \$ARCHIVE_USER \$EXTENSION \$SSL_CERT_FILE \$SSL_KEY_FILE' < /config/templates/main.cf.tmpl > /etc/postfix/main.cf
+  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < /config/templates/master.cf.tmpl > /etc/postfix/master.cf
   
   # OpenDKIM configurations
   setup_opendkim
@@ -43,27 +62,31 @@ generate_configs() {
   setup_opendmarc
   
   # Dovecot configurations
-  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < templates/dovecot.conf.tmpl > /etc/dovecot/dovecot.conf
+  envsubst '\$SSL_CERT_FILE \$SSL_KEY_FILE' < /config/templates/dovecot.conf.tmpl > /etc/dovecot/dovecot.conf
 
   echo "All configurations generated for ${PRIMARY_DOMAIN}"
 }
 
+
 setup_opendkim() {
   echo "Setting up OpenDKIM..."
-  mkdir -p "/etc/opendkim/keys/${PRIMARY_DOMAIN}"
-  opendkim-genkey --verbose --bits=1024 --selector=mail --directory="/etc/opendkim/keys/${PRIMARY_DOMAIN}"
-  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < templates/opendkim.conf.tmpl > /etc/opendkim.conf
-  cp /etc/default/opendkim.orig /etc/default/opendkim
-  echo 'SOCKET="inet:12301"' >> /etc/default/opendkim
-  chown -R opendkim:opendkim /etc/opendkim
+  if [[ -d "${OPENDKIM_KEYS_DIR}/${PRIMARY_DOMAIN}" ]]; then
+    envsubst '\$PRIMARY_DOMAIN \$OPENDKIM_DEFAULT_SELECTOR' < /config/templates/opendkim.conf.tmpl > /etc/opendkim.conf
+    cat /etc/opendkim.conf
+    envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < /config/templates/TrustedHosts.tmpl > /etc/opendkim/TrustedHosts
+    echo 'SOCKET="inet:12301"' >> /etc/default/opendkim
+    chown -R opendkim:opendkim /etc/opendkim
+  else
+    echo "OpenDKIM key directory for ${PRIMARY_DOMAIN} not found. Ensure the keys are in place or update OPENDKIM_KEYS_DIR if necessary."
+    echo "Make sure ${OPENDKIM_KEYS_DIR}/${PRIMARY_DOMAIN}/${OPENDKIM_DEFAULT_SELECTOR}.private exists."
+  fi
 }
 
 setup_opendmarc() {
   echo "Setting up OpenDMARC..."
   mkdir -p "/etc/opendmarc/"
-  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < templates/opendmarc.conf.tmpl > /etc/opendmarc.conf
+  envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < /config/templates/opendmarc.conf.tmpl > /etc/opendmarc.conf
   echo "localhost" > /etc/opendmarc/ignore.hosts
-  cp /etc/default/opendmarc.orig /etc/default/opendmarc
   echo 'SOCKET="inet:54321"' >> /etc/default/opendmarc
   chown -R opendmarc:opendmarc /etc/opendmarc
 }
@@ -87,19 +110,29 @@ main() {
   if [ "$1" = 'postfix' ]; then
     echo "Starting mail server with PRIMARY_DOMAIN=${PRIMARY_DOMAIN} and RELAY_IP=${RELAY_IP}"
     
-    setup_dovecot_ssl
+    setup_ssl_certificates
     [[ ! -f ok || $(< ok) != "${PRIMARY_DOMAIN}" ]] && generate_configs && echo "${PRIMARY_DOMAIN}" > ok
+    update_ssl_configurations
     generate_users
+
+
+
+    echo "--------------------------------------------------------------------------------------------------------"
+    echo "You can generate the p record (public key) by executing:"
+    echo "--------------------------------------------- COMMAND --------------------------------------------------"
+    echo "  openssl rsa -in "${OPENDKIM_KEYS_DIR}/${PRIMARY_DOMAIN}/${OPENDKIM_DEFAULT_SELECTOR}.private" --pubout"
+    echo "--------------------------------------------------------------------------------------------------------"
+    echo "Please ensure the following DNS TXT records are configured for OpenDKIM:"
+    echo "v=DKIM1; h=sha256; k=rsa; p=<PUBLIC_KEY>"
+    echo "--------------------------------------------------------------------------------------------------------"
 
     # Ensure postfix has access to necessary system files
     cp /etc/{hosts,localtime,nsswitch.conf,resolv.conf,services} /var/spool/postfix/etc/
 
-    echo "DKIM DNS entry:"
-    cat "/etc/opendkim/keys/${PRIMARY_DOMAIN}/mail.txt"
 
+    dovecot
     opendmarc
     opendkim
-    dovecot
     exec "$@"
   fi
 }

@@ -8,8 +8,8 @@ LogWhy                  Yes
 Canonicalization        relaxed/simple
 ExternalIgnoreList      refile:/etc/opendkim/TrustedHosts
 InternalHosts           refile:/etc/opendkim/TrustedHosts
-KeyFile                 /etc/opendkim/keys/${PRIMARY_DOMAIN}/mail.private
-Selector                mail
+KeyFile                 /etc/opendkim/keys/${PRIMARY_DOMAIN}/${OPENDKIM_DEFAULT_SELECTOR}.private
+Selector                ${OPENDKIM_DEFAULT_SELECTOR}
 Mode                    sv
 PidFile                 /var/run/opendkim/opendkim.pid
 SignatureAlgorithm      rsa-sha256

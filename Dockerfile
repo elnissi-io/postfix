@@ -32,7 +32,7 @@ RUN useradd -r -s /usr/sbin/nologin -c "Mail Archive" archive
 
 WORKDIR /root
 
-COPY config config
+COPY config/ /config
 COPY entrypoint.sh entrypoint.sh
 
 VOLUME ["/var/log", "/var/spool/postfix"]
