@@ -28,6 +28,16 @@ setup_ssl_certificates() {
   echo "Checking SSL certificates..."
   if [[ ! -f "$SSL_CERT_FILE" || ! -f "$SSL_KEY_FILE" ]]; then
     echo "SSL certificates not found. Generating self-signed certificates..."
+    
+    # Extract the directory paths from the file paths
+    ssl_cert_dir=$(dirname "$SSL_CERT_FILE")
+    ssl_key_dir=$(dirname "$SSL_KEY_FILE")
+
+    # Create directories if they do not exist
+    [ ! -d "$ssl_cert_dir" ] && mkdir -p "$ssl_cert_dir"
+    [ ! -d "$ssl_key_dir" ] && mkdir -p "$ssl_key_dir"
+
+    echo "Directories for SSL certificates and keys have been ensured."
     openssl req -x509 -newkey rsa:4096 -keyout "$SSL_KEY_FILE" -out "$SSL_CERT_FILE" \
       -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=${PRIMARY_DOMAIN}"
     chown root:root "$SSL_CERT_FILE" "$SSL_KEY_FILE"
