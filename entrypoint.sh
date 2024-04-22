@@ -104,8 +104,6 @@ setup_opendmarc() {
 generate_users() {
   echo "Generating users from ${AUTHS_FILE}..."
   yq e '.auths[] | "\(.username) \(.password)"' "$AUTHS_FILE" | while IFS=' ' read -r username password; do
-    echo "got $username"
-    echo "got $password"
     if [[ -n "$username" && -n "$password" ]]; then
       if ! id "$username" &>/dev/null; then
         echo "User $username does not exist, creating..."
