@@ -28,7 +28,7 @@ setup_ssl_certificates() {
   echo "Checking SSL certificates..."
   if [[ ! -f "$SSL_CERT_FILE" || ! -f "$SSL_KEY_FILE" ]]; then
     echo "SSL certificates not found. Generating self-signed certificates..."
-    
+
     # Extract the directory paths from the file paths
     ssl_cert_dir=$(dirname "$SSL_CERT_FILE")
     ssl_key_dir=$(dirname "$SSL_KEY_FILE")
@@ -103,18 +103,23 @@ setup_opendmarc() {
 
 generate_users() {
   echo "Generating users from ${AUTHS_FILE}..."
-  yq e '.auths[]' "$AUTHS_FILE" | while read -r auth; do
-    username=$(echo "$auth" | yq e '.username' -)
-    password=$(echo "$auth" | yq e '.password' -)
-
+  yq e '.auths[] | "\(.username) \(.password)"' "$AUTHS_FILE" | while IFS=' ' read -r username password; do
+    echo "got $username"
+    echo "got $password"
     if [[ -n "$username" && -n "$password" ]]; then
-      adduser "$username" --quiet --disabled-password --shell /usr/sbin/nologin --gecos "" --force-badname || true
-      echo "$username:$password" | chpasswd || true
+      if ! id "$username" &>/dev/null; then
+        echo "User $username does not exist, creating..."
+        adduser "$username" --quiet --disabled-password --shell /usr/sbin/nologin --gecos "" --force-badname || true
+        echo "$username:$password" | chpasswd || true
+      else
+        echo "User $username already exists, skipping creation."
+      fi
     else
       echo "Missing username or password for an entry, skipping..."
     fi
   done
 }
+
 
 main() {
   if [ "$1" = 'postfix' ]; then
