@@ -1,9 +1,6 @@
 # postfix-docker 📮🐳 #
 
 Creates a Docker container with an installation of the [postfix](http://postfix.org) MTA.
-Additionally it has an IMAP server ([dovecot](https://dovecot.org)) for accessing the archives
-of sent email.  
-
 All email is BCC'd to the `archive` account.
 
 ## Running ##
@@ -37,9 +34,7 @@ services:
       front:
         ipv4_address: 172.16.202.2
     ports:
-      - "1025:25/tcp"
-      - "1587:587/tcp"
-      - "1993:993/tcp"
+      - "25:25/tcp"
     secrets:
       - ssl_cert
       - ssl_key
@@ -78,8 +73,6 @@ The following ports are exposed by this container:
 | Port | Purpose        |
 |------|----------------|
 | 25 | SMTP relay |
-| 587 | Mail submission |
-| 993 | IMAPS |
 
 The sample [Docker composition](docker-compose.yml) publishes the
 exposed ports at 1025, 1587, and 1993, respectively.
@@ -98,14 +91,6 @@ exposed ports at 1025, 1587, and 1993, respectively.
 |-------|---------|---------|
 | `RELAY_IP` | An IP address or CIDR range that is allowed to relay mail without authentication. | `null` |
 | `EXTENSION` | An IP address that is allowed to relay mail without authentication. | `null` |
-
-## Secrets ##
-
-| Filename     | Purpose |
-|--------------|---------|
-| `fullchain.pem` | Public key for the Postfix server. |
-| `privkey.pem` | Private key for the Postfix server. |
-| `auths.yaml` | Mail account credentials to create at startup. |
 
 ## Contributing ##
 

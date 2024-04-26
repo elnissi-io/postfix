@@ -1,11 +1,10 @@
 services:
   postfix:
-    image: quay.io/elnissi-io/postfix:0.2.2
-    init: true
-    restart: always
+    image: quay.io/elnissi-io/postfix:0.2.3
+    restart: unless-stopped
     environment:
-      PRIMARY_DOMAIN: example.com
-      RELAY_IP: 172.16.202.0/24
+      PRIMARY_DOMAIN: dev.elnissi.io
+      RELAY_IP: 0.0.0.0/24
       AUTHS_FILE: /config/auths.yaml
       # SSL_CERT_FILE: /config/certs/key.pem
       # SSL_KEY_FILE: /config/certs/key.pem
@@ -14,17 +13,9 @@ services:
     #   front:
     #     ipv4_address: 172.16.202.2
     ports:
-      - "25:25/tcp"
-      - "587:587/tcp"
-      - "993:993/tcp"
+      - "25:25"
+    #  - "587:587"
+    #  - "993:993"
     volumes:
-      - ./config/auths.yaml:/config/auths.yaml
-      - ./data/mail.private:/etc/opendkim/keys/example.com/mail.private
-
-
-# networks:
-#   front:
-#     driver: bridge
-#     ipam:
-#       config:
-#         - subnet: 172.16.202.0/24
+      - ./data/auths.yaml:/config/auths.yaml
+      - ./data/mail.private:/etc/opendkim/keys/dev.elnissi.io/mail.private

@@ -9,19 +9,25 @@ RUN apt-get update --quiet --quiet && \
     curl \
     ca-certificates \
     diceware \
-    dovecot-imapd \
-    dovecot-lmtpd \
+    #dovecot-imapd \
+    #dovecot-lmtpd \
     gettext-base \
     mailutils \
+    sasl2-bin \
+    libsasl2-2 \
+    libsasl2-dev \
+    libsasl2-modules \
+    libsasl2-modules \
     opendkim \
     opendkim-tools \
     opendmarc \
-    postfix \
+    postfix-pcre \
     procmail \
     sasl2-bin && \
     # Clean up APT when done to reduce image size
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 
 # Download yq and set permissions
 RUN curl -sL https://github.com/mikefarah/yq/releases/download/v4.43.1/yq_linux_amd64 -o /usr/bin/yq && \
@@ -29,6 +35,10 @@ RUN curl -sL https://github.com/mikefarah/yq/releases/download/v4.43.1/yq_linux_
 
 # Create a non-privileged user for mail handling
 RUN useradd -r -s /usr/sbin/nologin -c "Mail Archive" archive
+
+RUN adduser noreply
+RUN adduser noreply sasl && adduser postfix sasl
+RUN adduser postfix opendkim
 
 WORKDIR /root
 
@@ -39,4 +49,4 @@ VOLUME ["/var/log", "/var/spool/postfix"]
 EXPOSE 25 587 993
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["postfix", "-v", "start-fg"]
+CMD ["postfix", "-v","start-fg"]

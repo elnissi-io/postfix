@@ -1,0 +1,9 @@
+START=yes
+DESC="saslauth -- postfix saslauth daemon"   
+NAME="saslauthd"
+MECHANISMS="sasldb"
+MECH_OPTIONS=""
+THREADS=15
+PARAMS="-m /var/spool/postfix/var/run/saslauthd/"
+PIDFILE="/var/spool/postfix/var/run/saslauthd/saslauthd.pid"
+OPTIONS="-c -m /var/spool/postfix/var/run/saslauthd"   # postfix/smtp in chroot()

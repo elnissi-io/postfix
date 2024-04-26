@@ -1,32 +1,76 @@
+# Basic Configuration
+smtpd_banner = $myhostname ESMTP $mail_name (Ubuntu)+
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+
 alias_database = hash:/etc/aliases
 alias_maps = hash:/etc/aliases
-always_bcc = ${ARCHIVE_USER}@${PRIMARY_DOMAIN}
-append_dot_mydomain = no
-biff = no
-compatibility_level = 2
-disable_vrfy_command = yes
+myhostname = ${PRIMARY_DOMAIN}
+mydomain = ${PRIMARY_DOMAIN}
+myorigin = ${PRIMARY_DOMAIN}
+mydestination = localhost.${PRIMARY_DOMAIN}, localhost, ${PRIMARY_DOMAIN}
+relayhost =
+mynetworks = 127.0.0.0/8, [::ffff:127.0.0.0]/104, [::1]/128, ${RELAY_IP}
+mailbox_size_limit = 0
+recipient_delimiter = +
+ignore_mx_lookup_error = yes
+
+compatibility_level = 3.6
+
+# Mailbox handling
+
+mailbox_command = procmail -a "${EXTENSION}"
+
+# Network and security
+
 inet_interfaces = all
 inet_protocols = ipv4
-mailbox_command = procmail -a "${EXTENSION}"
-mailbox_size_limit = 0
-maillog_file = /dev/stdout
-milter_default_action = accept
-milter_protocol = 6
-mydestination = ${PRIMARY_DOMAIN}, localhost.com, , localhost
-myhostname = ${PRIMARY_DOMAIN}
-mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 ${RELAY_IP}
-myorigin = ${PRIMARY_DOMAIN}
-non_smtpd_milters = inet:12301,inet:localhost:54321
-readme_directory = no
-recipient_delimiter = +
-relayhost =
-smtp_tls_note_starttls_offer = yes
-smtp_tls_security_level = may
-smtp_tls_session_cache_database = btree:$data_directory/smtp_scache
-smtpd_banner = $myhostname ESMTP $mail_name (Debian/GNU)
-smtpd_milters = inet:12301,inet:localhost:54321
-smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
+# SMTP CONFIG for SMTP daemon process for delivering mail out to the world.
+
+# TLS parameters
+smtp_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtp_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtp_tls_CApath=/etc/ssl/certs
+smtp_tls_security_level=may
+smtp_tls_session_cache_database=btree:${data_directory}/smtp_scache
+smtp_tls_loglevel=1
+
+# SMTPD CONFIG for SMTPD daemon process for handling incoming mail and routing to the appropriate internal location.
+
+# The order of relay restriction values is important, so be careful where to insert the next line
+smtpd_relay_restrictions=permit_sasl_authenticated defer_unauth_destination permit_mynetworks
+
+# TLS parameters
+smtpd_use_tls=yes
 smtpd_tls_cert_file=${SSL_CERT_FILE}
 smtpd_tls_key_file=${SSL_KEY_FILE}
-smtpd_tls_security_level = may
-smtpd_tls_session_cache_database = btree:$data_directory/smtpd_scache
+smtpd_tls_CApath=/etc/ssl/certs
+smtpd_tls_security_level=may
+smtpd_tls_session_cache_database=btree:${data_directory}/smtpd_scache
+smtpd_tls_loglevel=1
+smtpd_tls_received_header=yes
+smtpd_tls_auth_only=no
+smtpd_tls_session_cache_timeout=3600s
+tls_random_source=dev:/dev/urandom
+
+# SASL
+smtpd_sasl_auth_enable=yes
+smtpd_sasl_path=smtpd
+smtpd_sasl_security_options=noanonymous
+broken_sasl_auth_clients=yes
+smtpd_sasl_local_domain=${PRIMARY_DOMAIN}
+smtpd_tls_mandatory_exclude_ciphers=aNULL
+smtp_tls_note_starttls_offer=yes
+
+# The order of recipient restrictions is important, so be careful where to insert the next line
+smtpd_recipient_restrictions = pcre:/etc/postfix/allowed_email_pattern reject_unknown_recipient_domain, permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unauth_destination
+
+smtpd_sender_restrictions = pcre:/etc/postfix/allowed_email_pattern
+
+# Instruct Postfix to call opendkim via the milter protocol. (turn on after DNS entries are added)
+
+smtpd_milters = inet:12301,inet:localhost:54321
+non_smtpd_milters = inet:12301,inet:localhost:54321
+milter_default_action = accept
+milter_protocol = 6
