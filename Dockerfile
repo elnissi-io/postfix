@@ -38,7 +38,14 @@ RUN useradd -r -s /usr/sbin/nologin -c "Mail Archive" archive
 
 RUN adduser noreply
 RUN adduser noreply sasl && adduser postfix sasl
-RUN adduser postfix opendkim
+
+# Add 'opendkim' group and 'opendkim' user
+RUN groupadd -r opendkim && useradd -r -g opendkim -d /var/run/opendkim -s /usr/sbin/nologin -c "OpenDKIM" opendkim
+
+# Set appropriate permissions and ownership for OpenDKIM directories
+RUN mkdir -p /etc/opendkim /var/run/opendkim && \
+    chown -R opendkim:opendkim /etc/opendkim /var/run/opendkim && \
+    chmod -R 750 /etc/opendkim /var/run/opendkim
 
 WORKDIR /root
 
