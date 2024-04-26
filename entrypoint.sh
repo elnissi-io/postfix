@@ -109,11 +109,12 @@ setup_opendkim() {
   else
     echo "OpenDKIM key directory for ${PRIMARY_DOMAIN} not found. Ensure the keys are in place or update OPENDKIM_KEYS_DIR if necessary."
     echo "Make sure ${OPENDKIM_KEYS_DIR}/${PRIMARY_DOMAIN}/${OPENDKIM_DEFAULT_SELECTOR}.private exists."
-    chown -R :opendkim /etc/opendkim/keys
-    chmod -R 750 /etc/opendkim/keys
-    chown -R :opendkim ${OPENDKIM_KEYS_DIR}
-    chmod -R 750 ${OPENDKIM_KEYS_DIR}
+
   fi
+    chown -R opendkim:opendkim /etc/opendkim/keys
+    chmod -R 700 /etc/opendkim/keys
+    chown -R opendkim:opendkim ${OPENDKIM_KEYS_DIR}
+    chmod -R 700 ${OPENDKIM_KEYS_DIR}
 }
 
 setup_opendmarc() {
