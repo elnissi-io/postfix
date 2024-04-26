@@ -109,6 +109,7 @@ setup_opendkim() {
   else
     echo "OpenDKIM key directory for ${PRIMARY_DOMAIN} not found. Ensure the keys are in place or update OPENDKIM_KEYS_DIR if necessary."
     echo "Make sure ${OPENDKIM_KEYS_DIR}/${PRIMARY_DOMAIN}/${OPENDKIM_DEFAULT_SELECTOR}.private exists."
+    chown -R opendkim:opendkim ${OPENDKIM_KEYS_DIR}
   fi
 }
 

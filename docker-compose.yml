@@ -1,6 +1,6 @@
 services:
   postfix:
-    image: quay.io/elnissi-io/postfix:0.2.3
+    image: quay.io/elnissi-io/postfix:0.2.4
     restart: unless-stopped
     environment:
       PRIMARY_DOMAIN: dev.elnissi.io
