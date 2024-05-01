@@ -102,6 +102,8 @@ setup_opendkim() {
   echo "Setting up OpenDKIM..."
   if [[ -d "${OPENDKIM_KEYS_DIR}/${PRIMARY_DOMAIN}" ]]; then
     envsubst '\$PRIMARY_DOMAIN \$OPENDKIM_DEFAULT_SELECTOR' < /config/templates/opendkim.conf.tmpl > /etc/opendkim.conf
+    envsubst '\$PRIMARY_DOMAIN \$OPENDKIM_DEFAULT_SELECTOR' < /config/templates/SigningTable.tmpl > /etc/opendkim/SigningTable
+    envsubst '\$PRIMARY_DOMAIN \$OPENDKIM_DEFAULT_SELECTOR' < /config/templates/KeyTable.tmpl > /etc/opendkim/KeyTable
     cat /etc/opendkim.conf
     envsubst '\$PRIMARY_DOMAIN \$RELAY_IP' < /config/templates/TrustedHosts.tmpl > /etc/opendkim/TrustedHosts
     echo 'SOCKET="inet:12301"' >> /etc/default/opendkim
